@@ -1,0 +1,5 @@
+openai==0.28.0
+gradio
+requests
+beautifulsoup4
+python-dotenv
