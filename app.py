@@ -2,6 +2,9 @@ import os
 from dotenv import load_dotenv
 import openai
 import gradio as gr
+from langchain_community.llms import OpenAI
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
 
 # Import functions from backend.py
 from backend import get_social_media_reply, generate_blog_post, generate_comments_for_post, check_appropriateness, fetch_post_content
@@ -11,6 +14,17 @@ load_dotenv()
 
 # Initialize OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# Initialize LangChain model
+llm = OpenAI(api_key=openai.api_key)
+prompt_template = PromptTemplate(
+    input_variables=["input"],
+    template="You are a helpful assistant for a social media platform. Answer the following query: {input}"
+)
+llm_chain = LLMChain(
+    llm=llm,
+    prompt=prompt_template
+)
 
 def gradio_social_media_reply(comment):
     return get_social_media_reply(comment)
@@ -29,15 +43,8 @@ def gradio_check_post_appropriateness(url):
     return f"Status: {status}\nExplanation: {result['explanation']}"
 
 def gradio_chatbot(user_input):
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant for a social media platform."},
-            {"role": "user", "content": user_input},
-        ]
-    )
-    chatbot_reply = response['choices'][0]['message']['content']
-    return chatbot_reply
+    response = llm_chain.run(user_input)
+    return response
 
 with gr.Blocks() as demo:
     gr.Markdown("# Social Media Assistant Bot")
